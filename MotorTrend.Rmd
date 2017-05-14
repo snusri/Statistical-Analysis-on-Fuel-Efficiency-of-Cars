@@ -1,0 +1,114 @@
+---
+title: "Motor Trend Report"
+author: "Saeed Nusri"
+date: "11/6/2016"
+output: pdf_document
+---
+
+# Assessing Effects of Various Parameters on Fuel Efficiency 
+
+##Executive Summary
+
+This report focuses on exploring how various variables can affect fuel effiecient in different cars and tries to explore if there's a significant difference between automatic and manual transmission. Statistical analysis and regression modeling was used to quantify this. 
+
+To summarise the findings, it is found that manual transmissions on average does a little better than automatic transmission but it statistically difficult to draw this conclusion. But weight and cylinders variables were seen to be significantly affecting the fuel effieciency (mpg) the mostout of all the variable and were considered as counfounding variable while finding the effects of transmission on fuel effieciency.
+
+##Exploratory Analysis
+
+This section expolres the mtcars cars dataset in R Studio.
+
+```{r mtcars}
+library (datasets)
+data(mtcars)
+str(mtcars)
+```
+
+The data set was extracted from the 1974 edition of Motor Trend US Magazine and it deals with 1973 - 1974 models. It consists of 32 observations on 11 variables.
+
+The variable of interest is "am" since it denotes hwether the car is manual or automatic. 
+
+After loading the dataset the am variable is simplified to factor variable with properly named levels.
+
+```{r factoring am}
+mtcars$am <- as.factor(mtcars$am)
+mtcars$cyl  <- factor(mtcars$cyl)
+levels(mtcars$am) <- c("Automatic", "Manual")
+```
+
+Through a boxplot, it seems that the type of transmission affects mpg significantly.
+
+```{r}
+boxplot(mpg~am, data=mtcars, 
+        xlab = "Transmission", ylab = "Miles per Gallon", 
+        main = "Miles per Gallon based on Transmission")
+```
+
+The boxplot shows the relationship between the variables of fuel efficiency (MPG) and the two transmission where distinguisable differences between them is noticeable.
+
+##Statistical Analysis & Multi Variate Regression Model
+
+We perform a t-test on the two subsets of mpg data: manual and automatic transmission assuming that the transmission data has a normal distribution and tests the null hypothesis that they come from the same distribution. Based on the t-test results, we reject the null hypothesis that the mpg distributions for manual and automatic transmissions are the same.
+
+```{r t test}
+t.test(mpg ~ am, data = mtcars)
+```
+
+Now we carryout on regression modeling with fuel efficiency as predictor variable. The firstmodel includes all variables as predictors of mpg. Then we perform stepwise model selection in order to select significant predictors for the newmodel. This ensures that we have included useful variables while omitting ones that do not contribute significantly to predicting mpg.
+
+```{r fit}
+
+firstmodel <- aov(mpg ~ ., data = mtcars)
+summary(firstmodel)
+
+```
+
+Variables with p-value below 0.05 are more important. We choose cyl, disp, wt am as predictor variables for first model.
+
+```{r newmodel}
+newmodel <- lm(mpg ~ cyl + disp + wt + am, data = mtcars)
+summary(newmodel)$coefficients
+```
+
+Coefficient of disp variable has a p-value of 0.906 and is hence removed as one of the confounding variables. The newmodel is corrected to revisedmodel as following.
+
+```{r revised model}
+revisedmodel<- lm(mpg ~ cyl + wt + am, data = mtcars)
+summary(revisedmodel)
+```
+
+The adjusted r-squared is 0.83 and this is our final model. Clearly, with cylinders and weight as confounding variables, the ceofficient of the am variable is small but has a large p-value. 
+
+
+```{r last}
+par(mfrow = c(2, 2))
+plot(revisedmodel)
+```
+
+
+Following deduction can be made from the plots
+
+*  The points in the Residuals vs. Fitted plot are randomly scattered on the plot that verifies the independence condition.
+
+*  The Normal Q-Q plot consists of the points which mostly fall on the line indicating that the residuals are normally distributed.
+
+*  The Scale-Location plot consists of points scattered in a constant band pattern, indicating constant variance.
+
+*  There are some distinct points of interest (outliers or leverage points) in the top right of the plots that may indicate values of increased leverage of outliers.
+
+## Conclusion
+
+Based on the analysis done the following can be concluded:
+
+- Cars with Manual transmission get 0.15 more miles per gallon compared to cars with Automatic transmission. (adjusted for cyl, and wt).
+
+- mpg will decrease by 3.15 for every 1000 lb increase in wt.
+
+- If number of cylinders, cyl increases from 4 to 6 and 8, mpg will decrease by a factor of 4.3 and 6.1 respectively (adjusted by wt, and am).
+
+#Appendix 
+
+Pairs plot for the mtcars dataset
+
+```{r appendix}
+pairs(mpg ~ ., data = mtcars, main = "Pairs plot for the mtcars dataset")
+```
